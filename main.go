@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"go-kasir-api/database"
 	"go-kasir-api/handlers"
+	"go-kasir-api/repositories"
+	"go-kasir-api/services"
 	"log"
 	"net/http"
 	"os"
@@ -45,25 +47,12 @@ func main() {
 		})
 	})
 
-	http.HandleFunc("/categories", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			handlers.GetAllCategories(w, r)
-		case "POST":
-			handlers.StoreCategory(w, r)
-		}
-	})
+	categoryRepo := repositories.NewCategoryRepository(db)
+	categoryService := services.NewCategoryService(categoryRepo)
+	categoryHandler := handlers.NewCategoryHandler(categoryService)
 
-	http.HandleFunc("/categories/", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			handlers.GetCategoryById(w, r)
-		case "PUT":
-			handlers.UpdateCategory(w, r)
-		case "DELETE":
-			handlers.DeleteCategory(w, r)
-		}
-	})
+	http.HandleFunc("/categories", categoryHandler.HandleCategories)
+	http.HandleFunc("/categories/", categoryHandler.HandleCategoryByID)
 
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
