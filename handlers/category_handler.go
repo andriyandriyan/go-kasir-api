@@ -80,7 +80,9 @@ func (h *CategoryHandler) StoreCategory(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(category)
+	json.NewEncoder(w).Encode(map[string]any{
+		"data": category,
+	})
 }
 
 func (h *CategoryHandler) HandleCategoryByID(w http.ResponseWriter, r *http.Request) {
