@@ -3,11 +3,41 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"go-kasir-api/database"
 	"go-kasir-api/handlers"
+	"log"
 	"net/http"
+	"os"
+	"strings"
+
+	"github.com/spf13/viper"
 )
 
+type Config struct {
+	Port   string `mapstructure:"PORT"`
+	DBConn string `mapstructure:"DB_CONN"`
+}
+
 func main() {
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	if _, err := os.Stat(".env"); err == nil {
+		viper.SetConfigFile(".env")
+		_ = viper.ReadInConfig()
+	}
+
+	config := Config{
+		Port:   viper.GetString("PORT"),
+		DBConn: viper.GetString("DB_CONN"),
+	}
+
+	db, err := database.InitDB(config.DBConn)
+	if err != nil {
+		log.Fatal("Failed to initialize database:", err)
+	}
+	defer db.Close()
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
@@ -43,10 +73,10 @@ func main() {
 		})
 	})
 
-	fmt.Println("Server running on localhost:8080")
-
-	err := http.ListenAndServe(":8080", nil)
+	addr := "0.0.0.0:" + config.Port
+	fmt.Println("Server running on", addr)
+	err = http.ListenAndServe(addr, nil)
 	if err != nil {
-		fmt.Println("Failed to running server")
+		fmt.Println("Failed to running server:", err)
 	}
 }
